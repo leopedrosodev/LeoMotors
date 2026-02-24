@@ -1,5 +1,6 @@
 package br.com.leo.leomotors
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,11 +11,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -35,6 +40,7 @@ import br.com.leo.leomotors.data.OdometerRecord
 import br.com.leo.leomotors.data.PeriodReport
 import br.com.leo.leomotors.data.ReportCalculator
 import br.com.leo.leomotors.data.Vehicle
+import br.com.leo.leomotors.data.VehicleType
 import java.text.NumberFormat
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -178,13 +184,15 @@ internal fun RefuelsTab(
     onAddRefuel: (Long, Long, Double, Double, Double) -> Unit
 ) {
     var selectedVehicleId by remember(vehicles) {
-        mutableLongStateOf(vehicles.firstOrNull()?.id ?: -1L)
+        mutableLongStateOf(-1L)
     }
     var dateText by remember { mutableStateOf(todayText()) }
     var odometerText by remember { mutableStateOf("") }
     var litersText by remember { mutableStateOf("") }
     var priceText by remember { mutableStateOf("") }
     var feedback by remember { mutableStateOf<String?>(null) }
+    val selectedVehicle = vehicles.firstOrNull { it.id == selectedVehicleId }
+    val canEditRefuelForm = selectedVehicle != null
 
     Column(
         modifier = Modifier
@@ -194,18 +202,37 @@ internal fun RefuelsTab(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Lancamento de abastecimento", style = MaterialTheme.typography.titleLarge)
+        Text(
+            "Escolha primeiro o veiculo para lancar o abastecimento.",
+            style = MaterialTheme.typography.bodyMedium
+        )
 
-        VehicleSelector(
+        RefuelVehicleCardSelector(
             vehicles = vehicles,
             selectedVehicleId = selectedVehicleId,
             onSelect = { selectedVehicleId = it }
         )
+
+        if (selectedVehicle == null) {
+            Text(
+                "Selecione Carro ou Moto para habilitar o formulario.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+        } else {
+            Text(
+                "Selecionado: ${selectedVehicle.name}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
 
         OutlinedTextField(
             value = dateText,
             onValueChange = { dateText = it },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Data (DD/MM/AAAA)") },
+            enabled = canEditRefuelForm,
             singleLine = true
         )
         OutlinedTextField(
@@ -214,6 +241,7 @@ internal fun RefuelsTab(
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Odometro (km)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            enabled = canEditRefuelForm,
             singleLine = true
         )
         OutlinedTextField(
@@ -222,6 +250,7 @@ internal fun RefuelsTab(
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Litros abastecidos") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            enabled = canEditRefuelForm,
             singleLine = true
         )
         OutlinedTextField(
@@ -230,6 +259,7 @@ internal fun RefuelsTab(
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Preco por litro (R$)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            enabled = canEditRefuelForm,
             singleLine = true
         )
 
@@ -258,7 +288,8 @@ internal fun RefuelsTab(
                 priceText = ""
                 feedback = "Abastecimento salvo"
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = canEditRefuelForm
         ) {
             Text("Salvar abastecimento")
         }
@@ -292,6 +323,91 @@ internal fun RefuelsTab(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RefuelVehicleCardSelector(
+    vehicles: List<Vehicle>,
+    selectedVehicleId: Long,
+    onSelect: (Long) -> Unit
+) {
+    val carVehicle = vehicles.firstOrNull { it.type == VehicleType.CAR }
+    val motorcycleVehicle = vehicles.firstOrNull { it.type == VehicleType.MOTORCYCLE }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        RefuelVehicleCard(
+            modifier = Modifier.weight(1f),
+            title = "Carro",
+            vehicle = carVehicle,
+            selected = carVehicle?.id == selectedVehicleId,
+            iconType = VehicleType.CAR,
+            onClick = { carVehicle?.let { onSelect(it.id) } }
+        )
+
+        RefuelVehicleCard(
+            modifier = Modifier.weight(1f),
+            title = "Moto",
+            vehicle = motorcycleVehicle,
+            selected = motorcycleVehicle?.id == selectedVehicleId,
+            iconType = VehicleType.MOTORCYCLE,
+            onClick = { motorcycleVehicle?.let { onSelect(it.id) } }
+        )
+    }
+}
+
+@Composable
+private fun RefuelVehicleCard(
+    modifier: Modifier,
+    title: String,
+    vehicle: Vehicle?,
+    selected: Boolean,
+    iconType: VehicleType,
+    onClick: () -> Unit
+) {
+    val enabled = vehicle != null
+    val containerColor = when {
+        !enabled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        selected -> MaterialTheme.colorScheme.primaryContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val contentColor = when {
+        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant
+        selected -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    Card(
+        modifier = modifier
+            .clickable(enabled = enabled, onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = if (iconType == VehicleType.CAR) {
+                    Icons.Filled.DirectionsCar
+                } else {
+                    Icons.Filled.TwoWheeler
+                },
+                contentDescription = title
+            )
+
+            Text(title, fontWeight = FontWeight.Bold)
+            Text(vehicle?.name ?: "Nao cadastrado", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                if (selected) "Selecionado" else "Toque para selecionar",
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
