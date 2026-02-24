@@ -46,8 +46,10 @@ import br.com.leo.leomotors.ui.theme.LeoMotorsTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 private enum class AppTab(val title: String) {
     REFUELS("Abastecimentos"),
@@ -55,6 +57,8 @@ private enum class AppTab(val title: String) {
     CALCULATOR("Calculadora"),
     VEHICLES("Veiculos")
 }
+
+private const val CLOUD_OP_TIMEOUT_MS = 15_000L
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -111,7 +115,7 @@ private fun LeoMotorsApp(
                 refreshAll()
             }
         }.onFailure {
-            cloudMessage = it.message ?: "Falha na sincronizacao."
+            cloudMessage = cloudErrorMessage(it, "Falha na sincronizacao.")
         }
         refreshCloudUser()
     }
@@ -144,14 +148,21 @@ private fun LeoMotorsApp(
 
         coroutineScope.launch {
             cloudBusy = true
-            val signInResult = cloudSyncService.signInWithGoogleIdToken(idToken)
-            signInResult.onSuccess {
-                cloudMessage = "Logado como $it"
-            }.onFailure {
-                cloudMessage = it.message ?: "Falha no login Google."
+            try {
+                val signInResult = withTimeout(CLOUD_OP_TIMEOUT_MS) {
+                    cloudSyncService.signInWithGoogleIdToken(idToken)
+                }
+                signInResult.onSuccess {
+                    cloudMessage = "Logado como $it"
+                }.onFailure {
+                    cloudMessage = cloudErrorMessage(it, "Falha no login Google.")
+                }
+            } catch (throwable: Throwable) {
+                cloudMessage = cloudErrorMessage(throwable, "Falha no login Google.")
+            } finally {
+                refreshCloudUser()
+                cloudBusy = false
             }
-            refreshCloudUser()
-            cloudBusy = false
         }
     }
 
@@ -309,23 +320,35 @@ private fun LeoMotorsApp(
                     },
                     onUpload = {
                         coroutineScope.launch {
-                            cloudBusy = true
-                            handleCloudResult(cloudSyncService.uploadLocalState(store))
-                            cloudBusy = false
+                            runCloudSyncAction(
+                                onBusyChange = { cloudBusy = it },
+                                onErrorMessage = { cloudMessage = it },
+                                onRefreshUser = ::refreshCloudUser
+                            ) {
+                                handleCloudResult(cloudSyncService.uploadLocalState(store))
+                            }
                         }
                     },
                     onDownload = {
                         coroutineScope.launch {
-                            cloudBusy = true
-                            handleCloudResult(cloudSyncService.downloadRemoteState(store))
-                            cloudBusy = false
+                            runCloudSyncAction(
+                                onBusyChange = { cloudBusy = it },
+                                onErrorMessage = { cloudMessage = it },
+                                onRefreshUser = ::refreshCloudUser
+                            ) {
+                                handleCloudResult(cloudSyncService.downloadRemoteState(store))
+                            }
                         }
                     },
                     onSyncNow = {
                         coroutineScope.launch {
-                            cloudBusy = true
-                            handleCloudResult(cloudSyncService.syncNow(store))
-                            cloudBusy = false
+                            runCloudSyncAction(
+                                onBusyChange = { cloudBusy = it },
+                                onErrorMessage = { cloudMessage = it },
+                                onRefreshUser = ::refreshCloudUser
+                            ) {
+                                handleCloudResult(cloudSyncService.syncNow(store))
+                            }
                         }
                     }
                 )
@@ -337,5 +360,31 @@ private fun LeoMotorsApp(
                     .padding(end = 10.dp, bottom = 10.dp)
             )
         }
+    }
+}
+
+private suspend fun runCloudSyncAction(
+    onBusyChange: (Boolean) -> Unit,
+    onErrorMessage: (String) -> Unit,
+    onRefreshUser: () -> Unit,
+    block: suspend () -> Unit
+) {
+    onBusyChange(true)
+    try {
+        withTimeout(CLOUD_OP_TIMEOUT_MS) {
+            block()
+        }
+    } catch (throwable: Throwable) {
+        onErrorMessage(cloudErrorMessage(throwable, "Falha na sincronizacao."))
+        onRefreshUser()
+    } finally {
+        onBusyChange(false)
+    }
+}
+
+private fun cloudErrorMessage(throwable: Throwable, fallback: String): String {
+    return when (throwable) {
+        is TimeoutCancellationException -> "Tempo limite na operacao de nuvem. Verifique a internet e tente novamente."
+        else -> throwable.message ?: fallback
     }
 }
