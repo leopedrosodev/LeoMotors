@@ -1,5 +1,9 @@
 package br.com.leo.leomotors
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.TwoWheeler
@@ -32,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -380,14 +386,46 @@ private fun RefuelVehicleCard(
         selected -> MaterialTheme.colorScheme.onPrimaryContainer
         else -> MaterialTheme.colorScheme.onSurface
     }
+    val borderColorTarget = when {
+        !enabled -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        selected -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.outlineVariant
+    }
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.03f else 1f,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 600f),
+        label = "refuelVehicleCardScale"
+    )
+    val containerColorAnimated by animateColorAsState(
+        targetValue = containerColor,
+        label = "refuelVehicleCardContainerColor"
+    )
+    val borderColorAnimated by animateColorAsState(
+        targetValue = borderColorTarget,
+        label = "refuelVehicleCardBorderColor"
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (selected) 2.dp else 1.dp,
+        label = "refuelVehicleCardBorderWidth"
+    )
+    val cardElevation by animateDpAsState(
+        targetValue = if (selected) 7.dp else 1.dp,
+        label = "refuelVehicleCardElevation"
+    )
 
     Card(
         modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clickable(enabled = enabled, onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = containerColor,
+            containerColor = containerColorAnimated,
             contentColor = contentColor
-        )
+        ),
+        border = BorderStroke(borderWidth, borderColorAnimated),
+        elevation = CardDefaults.cardElevation(defaultElevation = cardElevation)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
