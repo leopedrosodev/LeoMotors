@@ -21,10 +21,15 @@ O app funciona localmente e pode sincronizar dados com Firebase quando configura
 - AlarmManager + BroadcastReceiver + Notification (lembretes)
 
 ## Arquitetura (resumo)
-- `Presentation`: telas Compose em `MainActivity`
+- `MainActivity`: somente bootstrap do app (edge-to-edge, lembretes e `setContent`)
+- `Presentation/App Shell`: orquestração da navegação, estado e ações globais em `ui/LeoMotorsApp.kt`
+- `Presentation/UI`: componentes e telas separados por responsabilidade (`ui/AccountSyncUi.kt`, `ui/BrandingUi.kt`, `ui/TabsUi.kt`)
 - `Data`: armazenamento local em `LocalStore`
 - `Domain/Rules`: cálculos de relatório em `ReportCalculator`
 - `Reminder`: agendamento e disparo de notificações em `reminder/`
+- `Cloud`: autenticação Google/Firebase Auth e sincronização Firestore em `cloud/CloudSyncService.kt`
+
+Documentação detalhada: `docs/ARCHITECTURE.md`
 
 ## Requisitos
 - Android Studio atualizado
@@ -110,6 +115,13 @@ adb devices -l
 app/
   src/main/java/br/com/leo/leomotors/
     MainActivity.kt
+    ui/
+      LeoMotorsApp.kt
+      BrandingUi.kt
+      AccountSyncUi.kt
+      TabsUi.kt
+    cloud/
+      CloudSyncService.kt
     data/
       Models.kt
       LocalStore.kt
