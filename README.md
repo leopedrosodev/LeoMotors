@@ -7,8 +7,9 @@ App Android nativo para controle local de veículos (carro e moto), com foco em:
 - quantidade de abastecimentos
 - calculadora de combustível
 - lembretes no início e fim do mês
+- login Google + sincronização na nuvem (opcional)
 
-Tudo funciona **offline**, sem backend.
+O app funciona localmente e pode sincronizar dados com Firebase quando configurado.
 
 ## Tecnologias
 - Kotlin
@@ -16,6 +17,7 @@ Tudo funciona **offline**, sem backend.
 - Android Gradle Plugin 9
 - Coil (imagem/GIF)
 - SharedPreferences + JSON (persistência local)
+- Firebase Auth + Firestore (sincronização opcional)
 - AlarmManager + BroadcastReceiver + Notification (lembretes)
 
 ## Arquitetura (resumo)
@@ -29,6 +31,24 @@ Tudo funciona **offline**, sem backend.
 - JDK 17
 - SDK Android instalado
 - (Opcional) `adb` para instalar via USB
+
+## Configurar Google Services (Firebase)
+1. Crie um projeto no Firebase Console.
+2. Em `Authentication > Sign-in method`, habilite `Google`.
+3. Crie o banco `Firestore`.
+4. Adicione o app Android com pacote `br.com.leo.leomotors`.
+5. Baixe o arquivo `google-services.json`.
+6. Copie para:
+
+```text
+app/google-services.json
+```
+
+7. Sincronize o Gradle e rode o app.
+
+Observações:
+- Sem `google-services.json`, o app continua rodando localmente, mas login/sincronização não funcionam.
+- `google_web_client_id` em `app/src/main/res/values/strings.xml` fica como fallback manual.
 
 ## Rodar no Android Studio
 1. Abra o projeto `LeoMotors`.
@@ -108,4 +128,4 @@ app/
 - O app usa ícone customizado pelo `AndroidManifest.xml`.
 - Se o launcher mostrar ícone antigo, desinstale e instale novamente (cache do launcher).
 - Dados ficam salvos localmente no aparelho.
-
+- Para login/sync, configure `app/google-services.json`.

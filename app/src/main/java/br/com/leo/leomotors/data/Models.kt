@@ -92,3 +92,13 @@ data class PeriodReport(
     val refuelCount: Int,
     val averageMonthlyCost: Double
 )
+
+data class LocalStateSnapshot(
+    val vehicles: List<Vehicle>,
+    val odometerRecords: List<OdometerRecord>,
+    val fuelRecords: List<FuelRecord>,
+    val updatedAtMillis: Long
+) {
+    val isEmpty: Boolean
+        get() = vehicles.isEmpty() && odometerRecords.isEmpty() && fuelRecords.isEmpty()
+}

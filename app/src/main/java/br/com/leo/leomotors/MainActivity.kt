@@ -1,6 +1,8 @@
 package br.com.leo.leomotors
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,11 +30,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -48,6 +53,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -66,6 +72,8 @@ import androidx.core.content.ContextCompat
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import br.com.leo.leomotors.cloud.CloudSyncService
+import br.com.leo.leomotors.cloud.SyncResponse
 import br.com.leo.leomotors.data.FuelRecord
 import br.com.leo.leomotors.data.LocalStore
 import br.com.leo.leomotors.data.OdometerRecord
@@ -80,6 +88,10 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import java.text.NumberFormat
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -100,6 +112,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class AppTab(val title: String) {
+    ACCOUNT("Conta"),
     REFUELS("Abastecimentos"),
     REPORTS("Relatorios"),
     CALCULATOR("Calculadora"),
@@ -146,10 +159,15 @@ private fun LeoMotorsApp(
     onToggleTheme: () -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val cloudSyncService = remember(context) { CloudSyncService(context.applicationContext) }
 
     var vehicles by remember { mutableStateOf(store.getVehicles()) }
     var fuelRecords by remember { mutableStateOf(store.getFuelRecords()) }
     var odometerRecords by remember { mutableStateOf(store.getOdometerRecords()) }
+    var cloudMessage by remember { mutableStateOf<String?>(null) }
+    var cloudBusy by remember { mutableStateOf(false) }
+    var cloudUserEmail by remember { mutableStateOf(cloudSyncService.currentUserEmail()) }
 
     fun refreshAll() {
         vehicles = store.getVehicles()
@@ -157,9 +175,60 @@ private fun LeoMotorsApp(
         odometerRecords = store.getOdometerRecords()
     }
 
+    fun refreshCloudUser() {
+        cloudUserEmail = cloudSyncService.currentUserEmail()
+    }
+
+    fun handleCloudResult(result: Result<SyncResponse>) {
+        result.onSuccess {
+            cloudMessage = it.message
+            if (it.localUpdated) {
+                refreshAll()
+            }
+        }.onFailure {
+            cloudMessage = it.message ?: "Falha na sincronizacao."
+        }
+        refreshCloudUser()
+    }
+
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { activityResult ->
+        if (activityResult.resultCode != Activity.RESULT_OK || activityResult.data == null) {
+            cloudMessage = "Login Google cancelado."
+            return@rememberLauncherForActivityResult
+        }
+
+        val account = runCatching {
+            GoogleSignIn.getSignedInAccountFromIntent(activityResult.data)
+                .getResult(ApiException::class.java)
+        }.getOrElse {
+            cloudMessage = "Falha ao obter conta Google: ${it.message}"
+            return@rememberLauncherForActivityResult
+        }
+
+        val idToken = account.idToken
+        if (idToken.isNullOrBlank()) {
+            cloudMessage = "ID token ausente. Verifique o client ID do Google."
+            return@rememberLauncherForActivityResult
+        }
+
+        coroutineScope.launch {
+            cloudBusy = true
+            val signInResult = cloudSyncService.signInWithGoogleIdToken(idToken)
+            signInResult.onSuccess {
+                cloudMessage = "Logado como $it"
+            }.onFailure {
+                cloudMessage = it.message ?: "Falha no login Google."
+            }
+            refreshCloudUser()
+            cloudBusy = false
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -243,6 +312,51 @@ private fun LeoMotorsApp(
                 }
 
                 when (tabs[selectedTab]) {
+                    AppTab.ACCOUNT -> CloudSyncTab(
+                        userEmail = cloudUserEmail,
+                        statusMessage = cloudMessage,
+                        busy = cloudBusy,
+                        onLoginGoogle = {
+                            val clientId = resolveGoogleClientId(context)
+                            if (clientId == null) {
+                                cloudMessage = "Configure app/google-services.json (ou google_web_client_id em strings.xml)."
+                                return@CloudSyncTab
+                            }
+                            val options = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                                .requestEmail()
+                                .requestIdToken(clientId)
+                                .build()
+                            val signInClient = GoogleSignIn.getClient(context, options)
+                            googleSignInLauncher.launch(signInClient.signInIntent)
+                        },
+                        onSignOut = {
+                            cloudSyncService.signOut()
+                            refreshCloudUser()
+                            cloudMessage = "Sessao encerrada."
+                        },
+                        onUpload = {
+                            coroutineScope.launch {
+                                cloudBusy = true
+                                handleCloudResult(cloudSyncService.uploadLocalState(store))
+                                cloudBusy = false
+                            }
+                        },
+                        onDownload = {
+                            coroutineScope.launch {
+                                cloudBusy = true
+                                handleCloudResult(cloudSyncService.downloadRemoteState(store))
+                                cloudBusy = false
+                            }
+                        },
+                        onSyncNow = {
+                            coroutineScope.launch {
+                                cloudBusy = true
+                                handleCloudResult(cloudSyncService.syncNow(store))
+                                cloudBusy = false
+                            }
+                        }
+                    )
+
                     AppTab.VEHICLES -> VehiclesTab(
                         vehicles = vehicles,
                         odometerRecords = odometerRecords,
@@ -322,6 +436,100 @@ private fun AppVersionBadge(modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun CloudSyncTab(
+    userEmail: String?,
+    statusMessage: String?,
+    busy: Boolean,
+    onLoginGoogle: () -> Unit,
+    onSignOut: () -> Unit,
+    onUpload: () -> Unit,
+    onDownload: () -> Unit,
+    onSyncNow: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Conta e sincronizacao", style = MaterialTheme.typography.titleLarge)
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (userEmail == null) {
+                    Text("Você ainda não está logado.")
+                    Button(
+                        onClick = onLoginGoogle,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Entrar com Google")
+                    }
+                } else {
+                    Text("Logado como:")
+                    Text(userEmail, fontWeight = FontWeight.Bold)
+
+                    OutlinedButton(
+                        onClick = onSignOut,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Sair da conta")
+                    }
+
+                    Button(
+                        onClick = onSyncNow,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Sincronizar agora")
+                    }
+
+                    OutlinedButton(
+                        onClick = onUpload,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Enviar para nuvem")
+                    }
+
+                    OutlinedButton(
+                        onClick = onDownload,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Baixar da nuvem")
+                    }
+                }
+
+                if (busy) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircularProgressIndicator(modifier = Modifier.height(18.dp))
+                        Text("Processando...")
+                    }
+                }
+
+                statusMessage?.let {
+                    Text(it, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+
+        Text(
+            "Conflito simples: o snapshot com timestamp mais recente vence (local ou nuvem).",
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+@Composable
 private fun IntroPresentationScreen(isDarkTheme: Boolean) {
     val gifId = drawableIdByName(INTRO_GIF_DRAWABLE_NAME)
     val logoId = drawableIdByName(if (isDarkTheme) LOGO_DRAWABLE_DARK_NAME else LOGO_DRAWABLE_NAME)
@@ -335,7 +543,10 @@ private fun IntroPresentationScreen(isDarkTheme: Boolean) {
         if (gifId != 0) {
             GifImage(
                 drawableId = gifId,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth(0.72f)
+                    .aspectRatio(9f / 16f)
             )
         }
 
@@ -405,7 +616,7 @@ private fun GifImage(drawableId: Int, modifier: Modifier = Modifier) {
             .build(),
         imageLoader = imageLoader,
         contentDescription = "Apresentacao Leo Motors",
-        contentScale = ContentScale.Crop,
+        contentScale = ContentScale.Fit,
         modifier = modifier
     )
 }
@@ -416,6 +627,23 @@ private fun drawableIdByName(name: String): Int {
     return remember(name, context) {
         context.resources.getIdentifier(name, "drawable", context.packageName)
     }
+}
+
+private fun resolveGoogleClientId(context: Context): String? {
+    val manual = context.getString(R.string.google_web_client_id).trim()
+    if (manual.isNotEmpty()) return manual
+
+    val generatedResId = context.resources.getIdentifier(
+        "default_web_client_id",
+        "string",
+        context.packageName
+    )
+    if (generatedResId != 0) {
+        val generated = context.getString(generatedResId).trim()
+        if (generated.isNotEmpty()) return generated
+    }
+
+    return null
 }
 
 @Composable
