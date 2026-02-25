@@ -6,6 +6,7 @@ import br.com.leo.leomotors.data.local.LeoMotorsDatabase
 import br.com.leo.leomotors.data.local.RoomSnapshotDataSource
 import br.com.leo.leomotors.data.local.migration.LegacyImportManager
 import br.com.leo.leomotors.data.local.migration.LegacyPreferencesReader
+import br.com.leo.leomotors.data.local.migration.RoomMigrations
 import br.com.leo.leomotors.data.repository.MaintenanceRepositoryImpl
 import br.com.leo.leomotors.data.repository.OdometerRepositoryImpl
 import br.com.leo.leomotors.data.repository.RefuelRepositoryImpl
@@ -52,7 +53,9 @@ class AppContainer(context: Context) {
         appContext,
         LeoMotorsDatabase::class.java,
         "leo_motors.db"
-    ).build()
+    )
+        .addMigrations(RoomMigrations.MIGRATION_1_2)
+        .build()
 
     private val settingsRepository: SettingsRepository = SettingsRepositoryImpl(database)
 

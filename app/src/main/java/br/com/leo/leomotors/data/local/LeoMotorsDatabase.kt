@@ -21,7 +21,7 @@ import br.com.leo.leomotors.data.local.entity.VehicleEntity
         MaintenanceRecordEntity::class,
         SettingsEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class LeoMotorsDatabase : RoomDatabase() {
