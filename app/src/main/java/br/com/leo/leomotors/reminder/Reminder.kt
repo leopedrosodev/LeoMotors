@@ -20,8 +20,6 @@ import java.util.Calendar
 
 object ReminderScheduler {
     private const val CHANNEL_ID = "leo_motors_reminders"
-    private const val CHANNEL_NAME = "Lembretes Leo Motors"
-    private const val CHANNEL_DESCRIPTION = "Lembretes para registrar odometro no inicio e fim do mes"
     private const val ALARM_REQUEST_CODE = 42010
 
     fun initialize(context: Context) {
@@ -67,15 +65,15 @@ object ReminderScheduler {
         createChannel(context)
 
         val title = if (isStartOfMonth) {
-            "Inicio do mes"
+            context.getString(R.string.notif_title_month_start)
         } else {
-            "Fim do mes"
+            context.getString(R.string.notif_title_month_end)
         }
 
         val text = if (isStartOfMonth) {
-            "Registre o odometro inicial dos seus veiculos para acompanhar as medias."
+            context.getString(R.string.notif_text_month_start)
         } else {
-            "Registre o odometro final para fechar suas medias do mes."
+            context.getString(R.string.notif_text_month_end)
         }
 
         val openAppIntent = Intent(context, MainActivity::class.java)
@@ -105,10 +103,10 @@ object ReminderScheduler {
 
         val channel = NotificationChannel(
             CHANNEL_ID,
-            CHANNEL_NAME,
+            context.getString(R.string.notif_channel_name),
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = CHANNEL_DESCRIPTION
+            description = context.getString(R.string.notif_channel_desc)
         }
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

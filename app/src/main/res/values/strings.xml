@@ -1,4 +1,160 @@
 <resources>
     <string name="app_name">LeoMotors</string>
     <string name="google_web_client_id"></string>
+
+    <string name="tab_refuels">Abastecimentos</string>
+    <string name="tab_maintenance">Manutencao</string>
+    <string name="tab_reports">Relatorios</string>
+    <string name="tab_calculator">Calculadora</string>
+    <string name="tab_vehicles">Veiculos</string>
+
+    <string name="content_desc_account_sync">Conta e sincronizacao</string>
+    <string name="content_desc_theme_light">Mudar para tema claro</string>
+    <string name="content_desc_theme_dark">Mudar para tema escuro</string>
+
+    <string name="title_vehicles">Cadastro de veiculos</string>
+    <string name="desc_vehicles_intro">Os dois veiculos ja ficam cadastrados localmente no seu celular.</string>
+    <string name="label_vehicle_name">Nome do veiculo</string>
+    <string name="action_save_name">Salvar nome</string>
+    <string name="label_register_odometer">Registrar odometro</string>
+    <string name="label_date_br">Data (DD/MM/AAAA)</string>
+    <string name="label_odometer_km">Odometro (km)</string>
+    <string name="action_save_odometer">Salvar odometro</string>
+    <string name="hint_odometer_month">Dica: registre no inicio e no fim do mes para melhorar a precisao dos relatorios.</string>
+    <string name="text_no_odometer">Sem odometro registrado</string>
+    <string name="text_last_odometer">Ultimo odometro: %1$s km</string>
+
+    <string name="title_refuels">Lancamento de abastecimento</string>
+    <string name="desc_refuels_intro">Escolha o veiculo e registre os dados do abastecimento.</string>
+    <string name="label_liters">Litros abastecidos</string>
+    <string name="label_price_per_liter">Preco por litro (R$)</string>
+    <string name="action_save_refuel">Salvar abastecimento</string>
+    <string name="title_latest_refuels">Ultimos abastecimentos</string>
+    <string name="text_no_refuels">Nenhum abastecimento registrado ainda</string>
+    <string name="text_refuel_odometer">Odometro: %1$s km</string>
+    <string name="text_refuel_liters_price">Litros: %1$s | Preco/l: R$ %2$s</string>
+    <string name="text_refuel_total">Total: %1$s</string>
+
+    <string name="title_maintenance">Manutencao preventiva</string>
+    <string name="desc_maintenance_intro">Cadastre revisoes por data ou por quilometragem para receber alertas visuais.</string>
+    <string name="label_maintenance_title">Titulo da manutencao</string>
+    <string name="label_due_date_optional">Vencimento por data (DD/MM/AAAA) - opcional</string>
+    <string name="label_due_km_optional">Vencimento por odometro (km) - opcional</string>
+    <string name="label_estimated_cost_optional">Custo estimado (R$) - opcional</string>
+    <string name="label_notes">Observacoes</string>
+    <string name="action_save_maintenance">Salvar manutencao</string>
+    <string name="title_vehicle_planning">Planejamento do veiculo</string>
+    <string name="text_no_maintenance_for_vehicle">Nenhuma manutencao cadastrada para este veiculo</string>
+    <string name="text_type">Tipo: %1$s</string>
+    <string name="text_due_date">Vence em: %1$s</string>
+    <string name="text_due_km">Vence no odometro: %1$s km</string>
+    <string name="text_estimated_cost">Custo previsto: %1$s</string>
+    <string name="text_notes">Obs: %1$s</string>
+    <string name="text_status">Status: %1$s</string>
+    <string name="status_done">Concluida</string>
+    <string name="status_overdue">Vencida</string>
+    <string name="status_due_soon">Vence em breve</string>
+    <string name="status_on_track">Em dia</string>
+    <string name="action_mark_pending">Marcar como pendente</string>
+    <string name="action_mark_done">Marcar como concluida</string>
+
+    <string name="title_reports">Relatorios e painel</string>
+    <string name="title_weekly">Semanal</string>
+    <string name="title_monthly">Mensal</string>
+    <string name="title_vehicle_summary">Resumo geral do veiculo</string>
+    <string name="text_total_distance">Distancia total: %1$s km</string>
+    <string name="text_average_consumption">Consumo medio geral: %1$s km/l</string>
+    <string name="text_cost_per_km">Custo medio por km: %1$s</string>
+    <string name="text_total_fuel_cost">Gasto total combustivel: %1$s</string>
+    <string name="title_monthly_cost_chart">Gasto mensal (ultimos 6 meses)</string>
+    <string name="title_monthly_consumption_chart">Consumo medio km/l (ultimos 6 meses)</string>
+    <string name="title_vehicle_compare">Comparativo rapido entre veiculos</string>
+    <string name="text_refuel_count">Abastecimentos: %1$d</string>
+    <string name="text_fuel_total">Combustivel total: %1$s</string>
+    <string name="text_maintenance_total">Manutencao prevista/acumulada: %1$s</string>
+    <string name="action_export_csv">Exportar dados em CSV</string>
+    <string name="text_period_range">%1$s ate %2$s</string>
+    <string name="text_report_distance">Distancia percorrida: %1$s km</string>
+    <string name="text_report_consumption">Consumo de combustivel: %1$s km/l</string>
+    <string name="text_report_cost">Gasto de combustivel: %1$s</string>
+    <string name="text_report_refuels">Quantidade de abastecimentos: %1$d</string>
+    <string name="text_report_liters">Litros abastecidos: %1$s l</string>
+    <string name="text_no_chart_data">Sem dados suficientes</string>
+
+    <string name="title_calculator">Calculadora de combustivel</string>
+    <string name="desc_calculator_intro">Escolha o campo que sera calculado automaticamente, como no modelo do print.</string>
+    <string name="calc_distance">Distancia (km)</string>
+    <string name="calc_consumption">Consumo (km/l)</string>
+    <string name="calc_liters">Quantidade de combustivel (litros)</string>
+    <string name="calc_price">Preco do combustivel (R$/l)</string>
+    <string name="calc_result">Resultado</string>
+    <string name="calc_result_distance">Distancia: %1$s km</string>
+    <string name="calc_result_consumption">Consumo: %1$s km/l</string>
+    <string name="calc_result_liters">Litros: %1$s l</string>
+    <string name="calc_result_cost">Custo do combustivel: %1$s</string>
+    <string name="action_clear_calculator">Limpar calculadora</string>
+    <string name="calc_missing_distance">Distancia</string>
+    <string name="calc_missing_consumption">Consumo km/l</string>
+    <string name="calc_missing_liters">Litros</string>
+
+    <string name="title_account_sync">Conta e sincronizacao</string>
+    <string name="text_not_logged_in">Voce ainda nao esta logado.</string>
+    <string name="action_login_google">Entrar com Google</string>
+    <string name="text_logged_as">Logado como:</string>
+    <string name="action_logout">Sair da conta</string>
+    <string name="action_sync_now">Sincronizar agora</string>
+    <string name="action_upload_cloud">Enviar para nuvem</string>
+    <string name="action_download_cloud">Baixar da nuvem</string>
+    <string name="text_processing">Processando...</string>
+    <string name="text_sync_conflict_hint">Conflito simples: o snapshot com timestamp mais recente vence (local ou nuvem).</string>
+    <string name="action_close">Fechar</string>
+
+    <string name="logo_fallback">LEO MOTORS</string>
+    <string name="logo_leo_motors">Logo Leo Motors</string>
+    <string name="intro_content_desc">Apresentacao Leo Motors</string>
+
+    <string name="notif_channel_name">Lembretes Leo Motors</string>
+    <string name="notif_channel_desc">Lembretes para registrar odometro no inicio e fim do mes</string>
+    <string name="notif_title_month_start">Inicio do mes</string>
+    <string name="notif_title_month_end">Fim do mes</string>
+    <string name="notif_text_month_start">Registre o odometro inicial dos seus veiculos para acompanhar as medias.</string>
+    <string name="notif_text_month_end">Registre o odometro final para fechar suas medias do mes.</string>
+
+    <string name="feedback_login_cancelled">Login Google cancelado.</string>
+    <string name="feedback_login_failed">Falha ao obter conta Google: %1$s</string>
+    <string name="feedback_missing_id_token">ID token ausente. Verifique o client ID do Google.</string>
+    <string name="feedback_missing_google_config">Configure app/google-services.json (ou google_web_client_id em strings.xml).</string>
+
+    <string name="feedback_name_invalid">Nome invalido</string>
+    <string name="feedback_name_updated">Nome atualizado</string>
+    <string name="feedback_invalid_odometer">Preencha data e odometro corretamente</string>
+    <string name="feedback_odometer_saved">Odometro registrado</string>
+    <string name="feedback_invalid_refuel">Preencha todos os campos com valores validos</string>
+    <string name="feedback_refuel_saved">Abastecimento salvo</string>
+
+    <string name="feedback_select_vehicle">Selecione um veiculo</string>
+    <string name="feedback_maintenance_title_required">Informe um titulo para a manutencao</string>
+    <string name="feedback_invalid_date">Data invalida</string>
+    <string name="feedback_invalid_odometer_value">Odometro invalido</string>
+    <string name="feedback_due_required">Informe data ou odometro para vencimento</string>
+    <string name="feedback_maintenance_saved">Manutencao cadastrada</string>
+
+    <string name="feedback_export_cancelled">Exportacao cancelada</string>
+    <string name="feedback_export_success">CSV exportado com sucesso</string>
+    <string name="feedback_export_failed">Falha ao exportar CSV: %1$s</string>
+
+    <string name="feedback_signed_in">Logado como %1$s</string>
+    <string name="feedback_signed_out">Sessao encerrada.</string>
+    <string name="feedback_sync_failed">Falha na sincronizacao.</string>
+    <string name="feedback_login_google_failed">Falha no login Google.</string>
+
+    <string name="sync_msg_upload_success">Dados locais enviados para a nuvem.</string>
+    <string name="sync_msg_download_success">Dados baixados da nuvem para o aparelho.</string>
+    <string name="sync_msg_first_backup">Primeiro backup criado na nuvem.</string>
+    <string name="sync_msg_remote_won">Conflito resolvido: nuvem estava mais recente e substituiu o local.</string>
+    <string name="sync_msg_local_won">Conflito resolvido: local estava mais recente e foi enviado para a nuvem.</string>
+    <string name="sync_msg_already_synced">Dados ja estao sincronizados.</string>
+    <string name="sync_msg_need_login">Faca login com Google antes de sincronizar.</string>
+    <string name="sync_msg_no_backup">Nenhum backup remoto encontrado para esta conta.</string>
+    <string name="sync_msg_missing_firebase">Firebase nao configurado. Adicione o arquivo app/google-services.json e sincronize o projeto.</string>
 </resources>

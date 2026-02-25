@@ -1,33 +1,58 @@
-# Arquitetura Leo Motors
+# Arquitetura Leo Motors (v1.2.0)
 
 ## Objetivo
-Organizar o app por responsabilidades para facilitar manutenção, testes e evolução.
+Aplicar separação por camadas e feature para reduzir acoplamento e melhorar testabilidade.
 
 ## Camadas
-- `MainActivity`: inicialização Android e entrada do Compose.
-- `UI App Shell` (`ui/LeoMotorsApp.kt`): tabs, tema, fluxo de login/sync e composição das telas.
-- `UI State` (`ui/LeoMotorsViewModel.kt`): estado principal de veículos, odômetros e abastecimentos.
-- `UI Components`:
-  - `ui/BrandingUi.kt`: top bar, splash/apresentação, badge de versão e utilitário de client id.
-  - `ui/AccountSyncUi.kt`: diálogo de conta e sincronização.
-  - `ui/TabsUi.kt`: telas de veículos, abastecimentos, relatórios e calculadora.
-- `Data` (`data/`):
-  - modelos de domínio
-  - validações de entrada
-  - persistência via `LocalStore` (Room + migração de legado)
+- `presentation`: Compose UI + ViewModels + contratos de estado/evento por feature.
+- `domain`: modelos de domínio, interfaces de repositório e casos de uso.
+- `data`: Room (local), Firebase (remoto), mapeadores e implementações de repositório.
+- `core`: DI manual (`AppContainer`) e utilitários compartilhados.
+
+## Estrutura principal
+- `MainActivity`: bootstrap Android somente.
+- `core/di/AppContainer.kt`: composição de dependências da aplicação.
+- `data/local/`: banco Room (`LeoMotorsDatabase`), DAOs, entities e snapshot local.
+- `data/local/migration/`: importação legada de `SharedPreferences` para Room.
+- `data/repository/`: implementações de `VehicleRepository`, `RefuelRepository`, `MaintenanceRepository`, `SettingsRepository`, `SnapshotRepository` e `SyncRepository`.
+- `data/remote/RemoteSnapshotMapper.kt`: compatibilidade de schema remoto (incluindo documentos antigos sem manutenção).
+- `domain/repository/Repositories.kt`: contratos de abstração.
+- `domain/usecase/`: regras de negócio por feature.
+- `presentation/app/LeoMotorsRoot.kt`: shell da aplicação (tabs, toolbar, tema, login Google).
+- `presentation/vehicles|refuels|maintenance|reports|account/`: ViewModels e telas específicas.
+
+## Fluxo de dados
+1. UI dispara `UiEvent`.
+2. ViewModel orquestra casos de uso.
+3. Caso de uso chama interface de repositório (`domain`).
+4. Repositório concreto (`data`) lê/escreve em Room e/ou Firebase.
+5. `Flow` retorna para ViewModel e atualiza `UiState`.
+
+## Persistência e migração
+- Persistência local principal: Room.
+- Migração legada: `LegacyImportManager` importa dados de `SharedPreferences` no primeiro boot.
+- Critérios da migração:
+  - preserva IDs antigos
+  - evita duplicidade
+  - marca flag transacional `legacyImportDone`
+
+## Sincronização
+- `SyncRepositoryImpl` encapsula Firebase Auth + Firestore.
+- Estratégia de conflito atual: timestamp `updatedAtMillis` mais recente vence.
+- Compatibilidade mantida para snapshots antigos (sem `maintenanceRecords`).
+
+## Testes
+- Unit tests:
   - regras de relatório
-- `Cloud` (`cloud/CloudSyncService.kt`): login Google + Firebase Auth + Firestore sync com merge por entidade.
-- `Reminder` (`reminder/`): agendamento e disparo de notificações.
+  - status de manutenção
+  - exportação CSV
+  - compatibilidade de mapper remoto
+  - comportamento de ViewModels
+- Instrumentation tests:
+  - migração legada Room
+  - smoke de navegação/salvamento/persistência
 
-## Regras adotadas no refactor
-- `MainActivity` sem regra de negócio.
-- UI separada por contexto funcional.
-- Estado principal concentrado em `ViewModel`.
-- Regras de cálculo/validação/persistência fora da camada de tela.
-- Integração cloud encapsulada em serviço dedicado.
-- Persistência local em Room com schema versionado (`app/schemas`).
-
-## Próximos passos recomendados
-- Criar interface de repositório para desacoplar `LocalStore`/cloud da UI.
-- Adicionar testes unitários de merge de sync (`CloudSyncService`).
-- Evoluir sync para suportar remoções e versionamento por entidade.
+## Decisões de arquitetura
+- 1 módulo Android (`app`) com separação forte por pacotes.
+- DI manual (sem Hilt/Koin) para manter simplicidade do projeto.
+- UI sem dependência direta de storage/cloud.

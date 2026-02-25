@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import br.com.leo.leomotors.R
@@ -98,7 +99,7 @@ internal fun IntroPresentationScreen(isDarkTheme: Boolean) {
         if (logoId != 0 || fallbackLogoId != 0) {
             Image(
                 painter = painterResource(id = if (logoId != 0) logoId else fallbackLogoId),
-                contentDescription = "Logo Leo Motors",
+                contentDescription = stringResource(R.string.logo_leo_motors),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -108,7 +109,7 @@ internal fun IntroPresentationScreen(isDarkTheme: Boolean) {
             )
         } else {
             Text(
-                text = "LEO MOTORS",
+                text = stringResource(R.string.logo_fallback),
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
                 modifier = Modifier.align(Alignment.Center)
@@ -129,12 +130,12 @@ internal fun AppTopBarTitle(isDarkTheme: Boolean) {
         if (logoId != 0 || fallbackLogoId != 0) {
             Image(
                 painter = painterResource(id = if (logoId != 0) logoId else fallbackLogoId),
-                contentDescription = "Logo Leo Motors",
+                contentDescription = stringResource(R.string.logo_leo_motors),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.height(44.dp)
             )
         } else {
-            Text("Leo Motors")
+            Text(stringResource(R.string.app_name))
         }
     }
 }
@@ -160,7 +161,7 @@ private fun GifImage(drawableId: Int, modifier: Modifier = Modifier) {
             .crossfade(false)
             .build(),
         imageLoader = imageLoader,
-        contentDescription = "Apresentacao Leo Motors",
+        contentDescription = stringResource(R.string.intro_content_desc),
         contentScale = ContentScale.Fit,
         modifier = modifier
     )

@@ -1,0 +1,24 @@
+package br.com.leo.leomotors.presentation.vehicles
+
+import br.com.leo.leomotors.domain.model.OdometerRecord
+import br.com.leo.leomotors.domain.model.Vehicle
+
+sealed interface VehiclesUiEvent {
+    data class SelectVehicle(val vehicleId: Long) : VehiclesUiEvent
+    data class ChangeDate(val value: String) : VehiclesUiEvent
+    data class ChangeOdometer(val value: String) : VehiclesUiEvent
+    data class ChangeVehicleName(val vehicleId: Long, val value: String) : VehiclesUiEvent
+    data class SaveVehicleName(val vehicleId: Long) : VehiclesUiEvent
+    data object SaveOdometer : VehiclesUiEvent
+    data object ClearFeedback : VehiclesUiEvent
+}
+
+data class VehiclesUiState(
+    val vehicles: List<Vehicle> = emptyList(),
+    val odometerRecords: List<OdometerRecord> = emptyList(),
+    val selectedVehicleId: Long = -1L,
+    val dateText: String = "",
+    val odometerText: String = "",
+    val nameDrafts: Map<Long, String> = emptyMap(),
+    val feedback: String? = null
+)
