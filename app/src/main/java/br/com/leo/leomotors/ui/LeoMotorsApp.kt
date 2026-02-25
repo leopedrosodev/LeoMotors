@@ -265,6 +265,7 @@ private fun LeoMotorsApp(
                     AppTab.VEHICLES -> VehiclesTab(
                         vehicles = vehicles,
                         odometerRecords = odometerRecords,
+                        fuelRecords = fuelRecords,
                         onRenameVehicle = { vehicleId, name ->
                             store.updateVehicleName(vehicleId, name)
                             refreshAll()
@@ -278,6 +279,7 @@ private fun LeoMotorsApp(
                     AppTab.REFUELS -> RefuelsTab(
                         vehicles = vehicles,
                         fuelRecords = fuelRecords,
+                        odometerRecords = odometerRecords,
                         onAddRefuel = { vehicleId, dateEpochDay, odometerKm, liters, pricePerLiter ->
                             store.addFuelRecord(vehicleId, dateEpochDay, odometerKm, liters, pricePerLiter)
                             refreshAll()

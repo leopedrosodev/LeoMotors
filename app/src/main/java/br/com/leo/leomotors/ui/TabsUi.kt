@@ -22,6 +22,9 @@ import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -41,6 +45,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import br.com.leo.leomotors.data.EntryValidator
 import br.com.leo.leomotors.data.FuelRecord
 import br.com.leo.leomotors.data.OdometerRecord
 import br.com.leo.leomotors.data.PeriodReport
@@ -49,7 +54,9 @@ import br.com.leo.leomotors.data.Vehicle
 import br.com.leo.leomotors.data.VehicleType
 import java.text.NumberFormat
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -67,6 +74,7 @@ private val DATE_BR_FORMATTER: DateTimeFormatter =
 internal fun VehiclesTab(
     vehicles: List<Vehicle>,
     odometerRecords: List<OdometerRecord>,
+    fuelRecords: List<FuelRecord>,
     onRenameVehicle: (Long, String) -> Unit,
     onAddOdometer: (Long, Long, Double) -> Unit
 ) {
@@ -123,7 +131,7 @@ internal fun VehiclesTab(
                         }
 
                         Text(
-                            text = lastOdometerText(vehicle.id, odometerRecords),
+                            text = lastOdometerText(vehicle.id, odometerRecords, fuelRecords),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 12.dp)
                         )
@@ -140,12 +148,10 @@ internal fun VehiclesTab(
             selectedVehicleId = selectedVehicleId,
             onSelect = { selectedVehicleId = it }
         )
-        OutlinedTextField(
-            value = dateText,
-            onValueChange = { dateText = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Data (DD/MM/AAAA)") },
-            singleLine = true
+        BrDatePickerField(
+            label = "Data (DD/MM/AAAA)",
+            dateText = dateText,
+            onDateSelected = { dateText = it }
         )
         OutlinedTextField(
             value = odometerText,
@@ -159,11 +165,18 @@ internal fun VehiclesTab(
             onClick = {
                 val date = parseDate(dateText)
                 val odometer = parseDecimal(odometerText)
-                if (selectedVehicleId <= 0L || date == null || odometer == null) {
-                    feedback = "Preencha data e odometro corretamente"
+                val validationError = EntryValidator.validateOdometerEntry(
+                    vehicleId = selectedVehicleId,
+                    date = date,
+                    odometerKm = odometer,
+                    odometerRecords = odometerRecords,
+                    fuelRecords = fuelRecords
+                )
+                if (validationError != null) {
+                    feedback = validationError
                     return@Button
                 }
-                onAddOdometer(selectedVehicleId, date.toEpochDay(), odometer)
+                onAddOdometer(selectedVehicleId, date!!.toEpochDay(), odometer!!)
                 odometerText = ""
                 feedback = "Odometro registrado"
             },
@@ -187,6 +200,7 @@ internal fun VehiclesTab(
 internal fun RefuelsTab(
     vehicles: List<Vehicle>,
     fuelRecords: List<FuelRecord>,
+    odometerRecords: List<OdometerRecord>,
     onAddRefuel: (Long, Long, Double, Double, Double) -> Unit
 ) {
     var selectedVehicleId by remember(vehicles) {
@@ -233,13 +247,11 @@ internal fun RefuelsTab(
             )
         }
 
-        OutlinedTextField(
-            value = dateText,
-            onValueChange = { dateText = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Data (DD/MM/AAAA)") },
-            enabled = canEditRefuelForm,
-            singleLine = true
+        BrDatePickerField(
+            label = "Data (DD/MM/AAAA)",
+            dateText = dateText,
+            onDateSelected = { dateText = it },
+            enabled = canEditRefuelForm
         )
         OutlinedTextField(
             value = odometerText,
@@ -276,17 +288,26 @@ internal fun RefuelsTab(
                 val liters = parseDecimal(litersText)
                 val price = parseDecimal(priceText)
 
-                if (selectedVehicleId <= 0L || date == null || odometer == null || liters == null || price == null) {
-                    feedback = "Preencha todos os campos com valores validos"
+                val validationError = EntryValidator.validateRefuelEntry(
+                    vehicleId = selectedVehicleId,
+                    date = date,
+                    odometerKm = odometer,
+                    liters = liters,
+                    pricePerLiter = price,
+                    odometerRecords = odometerRecords,
+                    fuelRecords = fuelRecords
+                )
+                if (validationError != null) {
+                    feedback = validationError
                     return@Button
                 }
 
                 onAddRefuel(
                     selectedVehicleId,
-                    date.toEpochDay(),
-                    odometer,
-                    liters,
-                    price
+                    date!!.toEpochDay(),
+                    odometer!!,
+                    liters!!,
+                    price!!
                 )
 
                 odometerText = ""
@@ -445,6 +466,69 @@ private fun RefuelVehicleCard(
             Text(
                 if (selected) "Selecionado" else "Toque para selecionar",
                 style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun BrDatePickerField(
+    label: String,
+    dateText: String,
+    onDateSelected: (String) -> Unit,
+    enabled: Boolean = true
+) {
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = dateText,
+        onValueChange = {},
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled) { showDatePicker = true },
+        label = { Text(label) },
+        trailingIcon = {
+            TextButton(
+                onClick = { showDatePicker = true },
+                enabled = enabled
+            ) {
+                Text("Escolher")
+            }
+        },
+        enabled = enabled,
+        readOnly = true,
+        singleLine = true
+    )
+
+    if (showDatePicker) {
+        val initialDate = parseDate(dateText) ?: LocalDate.now()
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = toUtcMillis(initialDate)
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selected = datePickerState.selectedDateMillis
+                        if (selected != null) {
+                            onDateSelected(toLocalDate(selected).format(DATE_BR_FORMATTER))
+                        }
+                        showDatePicker = false
+                    }
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = false
             )
         }
     }
@@ -727,6 +811,14 @@ private fun parseDate(input: String): LocalDate? {
         ?: runCatching { LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE) }.getOrNull()
 }
 
+private fun toUtcMillis(date: LocalDate): Long {
+    return date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+}
+
+private fun toLocalDate(utcMillis: Long): LocalDate {
+    return Instant.ofEpochMilli(utcMillis).atZone(ZoneOffset.UTC).toLocalDate()
+}
+
 private fun parseDecimal(input: String): Double? {
     val normalized = input.trim().replace(',', '.')
     return normalized.toDoubleOrNull()
@@ -764,14 +856,16 @@ private fun emptyReport(): PeriodReport {
     )
 }
 
-private fun lastOdometerText(vehicleId: Long, records: List<OdometerRecord>): String {
-    val latest = records
-        .filter { it.vehicleId == vehicleId }
-        .maxByOrNull { it.dateEpochDay }
+private fun lastOdometerText(
+    vehicleId: Long,
+    odometerRecords: List<OdometerRecord>,
+    fuelRecords: List<FuelRecord>
+): String {
+    val latest = EntryValidator.latestKnownOdometer(vehicleId, odometerRecords, fuelRecords)
 
     return if (latest == null) {
         "Sem odometro registrado"
     } else {
-        "Ultimo odometro: ${formatNumber(latest.odometerKm)} km"
+        "Ultimo odometro: ${formatNumber(latest)} km"
     }
 }

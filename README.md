@@ -30,6 +30,7 @@ O app funciona localmente e pode sincronizar dados com Firebase quando configura
 - `Cloud`: autenticação Google/Firebase Auth e sincronização Firestore em `cloud/CloudSyncService.kt`
 
 Documentação detalhada: `docs/ARCHITECTURE.md`
+Roadmap de melhorias: `docs/IMPROVEMENTS_ROADMAP.md`
 
 ## Requisitos
 - Android Studio atualizado
@@ -64,7 +65,7 @@ Observações:
 No terminal, na raiz do projeto:
 
 ```bash
-cd /home/leonardoti03/AndroidStudioProjects/LeoMotors
+cd /home/leonardoti03/codes/github/LeoMotors
 ./gradlew :app:assembleDebug
 ```
 
@@ -106,9 +107,21 @@ adb install -r app/build/outputs/apk/debug/Leo-motors.apk
 # Rebuild debug
 ./gradlew :app:assembleDebug
 
+# Build + rename em um comando
+bash ./build_debug_apk.sh
+
 # Ver dispositivos conectados
 adb devices -l
 ```
+
+## Melhorias recentes
+- Seleção de abastecimento com cards `Carro`/`Moto` com microanimação de estado.
+- DatePicker nativo para datas de odômetro e abastecimento.
+- Validação de domínio para impedir:
+  - odômetro menor que o último registrado
+  - data no futuro
+  - litros/preço inválidos
+- Timeout e proteção de estado para sync em nuvem (evita ficar preso em `Processando...`).
 
 ## Estrutura principal
 ```text
