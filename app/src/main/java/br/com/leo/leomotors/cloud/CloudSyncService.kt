@@ -84,29 +84,37 @@ class CloudSyncService(private val context: Context) {
                 )
             }
 
+            val merged = mergeSnapshots(local, remote)
+            val localChanged = !merged.equivalentTo(local)
+            val remoteChanged = !merged.equivalentTo(remote)
+
+            if (localChanged) {
+                localStore.restoreLocalState(merged)
+            }
+            if (remoteChanged) {
+                writeRemoteSnapshot(merged)
+            }
+
             when {
-                remote.updatedAtMillis > local.updatedAtMillis -> {
-                    localStore.restoreLocalState(remote)
-                    SyncResponse(
-                        message = "Conflito resolvido: nuvem estava mais recente e substituiu o local.",
-                        localUpdated = true
-                    )
-                }
+                !localChanged && !remoteChanged -> SyncResponse(
+                    message = "Dados já estão sincronizados.",
+                    localUpdated = false
+                )
 
-                remote.updatedAtMillis < local.updatedAtMillis -> {
-                    writeRemoteSnapshot(local)
-                    SyncResponse(
-                        message = "Conflito resolvido: local estava mais recente e foi enviado para a nuvem.",
-                        localUpdated = false
-                    )
-                }
+                localChanged && remoteChanged -> SyncResponse(
+                    message = "Conflito resolvido por merge: dados locais e nuvem foram unificados.",
+                    localUpdated = true
+                )
 
-                else -> {
-                    SyncResponse(
-                        message = "Dados já estão sincronizados.",
-                        localUpdated = false
-                    )
-                }
+                localChanged -> SyncResponse(
+                    message = "Dados locais atualizados com base na nuvem.",
+                    localUpdated = true
+                )
+
+                else -> SyncResponse(
+                    message = "Dados locais enviados para nuvem.",
+                    localUpdated = false
+                )
             }
         }
     }
@@ -269,3 +277,90 @@ private const val FIELD_ODOMETER = "odometerRecords"
 private const val FIELD_FUEL = "fuelRecords"
 private const val FIELD_SCHEMA = "schemaVersion"
 private const val SCHEMA_VERSION = 1L
+
+private fun mergeSnapshots(local: LocalStateSnapshot, remote: LocalStateSnapshot): LocalStateSnapshot {
+    val preferRemote = remote.updatedAtMillis >= local.updatedAtMillis
+
+    val mergedVehicles = mergeVehicles(
+        local = local.vehicles,
+        remote = remote.vehicles,
+        preferRemote = preferRemote
+    )
+
+    val mergedOdometer = mergeById(
+        local = local.odometerRecords,
+        remote = remote.odometerRecords
+    ) { a, b ->
+        if (a.dateEpochDay >= b.dateEpochDay) a else b
+    }
+
+    val mergedFuel = mergeById(
+        local = local.fuelRecords,
+        remote = remote.fuelRecords
+    ) { a, b ->
+        if (a.dateEpochDay >= b.dateEpochDay) a else b
+    }
+
+    return LocalStateSnapshot(
+        vehicles = mergedVehicles.sortedBy { it.id },
+        odometerRecords = mergedOdometer.sortedByDescending { it.dateEpochDay },
+        fuelRecords = mergedFuel.sortedByDescending { it.dateEpochDay },
+        updatedAtMillis = maxOf(local.updatedAtMillis, remote.updatedAtMillis, System.currentTimeMillis())
+    )
+}
+
+private fun mergeVehicles(
+    local: List<Vehicle>,
+    remote: List<Vehicle>,
+    preferRemote: Boolean
+): List<Vehicle> {
+    val localById = local.associateBy { it.id }
+    val remoteById = remote.associateBy { it.id }
+    val ids = (localById.keys + remoteById.keys).toSortedSet()
+
+    return ids.mapNotNull { id ->
+        val localItem = localById[id]
+        val remoteItem = remoteById[id]
+        when {
+            localItem == null -> remoteItem
+            remoteItem == null -> localItem
+            localItem == remoteItem -> localItem
+            preferRemote -> remoteItem
+            else -> localItem
+        }
+    }
+}
+
+private fun <T> mergeById(
+    local: List<T>,
+    remote: List<T>,
+    resolver: (localItem: T, remoteItem: T) -> T
+): List<T> where T : Any {
+    val localById = local.associateBy { idOf(it) }
+    val remoteById = remote.associateBy { idOf(it) }
+    val ids = (localById.keys + remoteById.keys).toSortedSet()
+
+    return ids.mapNotNull { id ->
+        val localItem = localById[id]
+        val remoteItem = remoteById[id]
+        when {
+            localItem == null -> remoteItem
+            remoteItem == null -> localItem
+            else -> resolver(localItem, remoteItem)
+        }
+    }
+}
+
+private fun idOf(item: Any): Long {
+    return when (item) {
+        is OdometerRecord -> item.id
+        is FuelRecord -> item.id
+        else -> throw IllegalArgumentException("Unsupported type for id merge: ${item::class.java.name}")
+    }
+}
+
+private fun LocalStateSnapshot.equivalentTo(other: LocalStateSnapshot): Boolean {
+    return vehicles.sortedBy { it.id } == other.vehicles.sortedBy { it.id } &&
+        odometerRecords.sortedBy { it.id } == other.odometerRecords.sortedBy { it.id } &&
+        fuelRecords.sortedBy { it.id } == other.fuelRecords.sortedBy { it.id }
+}

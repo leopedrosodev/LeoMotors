@@ -26,6 +26,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.leo.leomotors.cloud.CloudSyncService
 import br.com.leo.leomotors.cloud.SyncResponse
 import br.com.leo.leomotors.data.LocalStore
@@ -65,11 +67,15 @@ private const val CLOUD_OP_TIMEOUT_MS = 15_000L
 internal fun LeoMotorsRoot() {
     val context = LocalContext.current
     val store = remember { LocalStore(context) }
+    val motorsViewModel: LeoMotorsViewModel = viewModel(
+        factory = LeoMotorsViewModelFactory(store)
+    )
     var isDarkTheme by remember { mutableStateOf(store.isDarkThemeEnabled()) }
 
     LeoMotorsTheme(darkTheme = isDarkTheme) {
         LeoMotorsApp(
             store = store,
+            motorsViewModel = motorsViewModel,
             isDarkTheme = isDarkTheme,
             onToggleTheme = {
                 val nextValue = !isDarkTheme
@@ -84,6 +90,7 @@ internal fun LeoMotorsRoot() {
 @OptIn(ExperimentalMaterial3Api::class)
 private fun LeoMotorsApp(
     store: LocalStore,
+    motorsViewModel: LeoMotorsViewModel,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit
 ) {
@@ -91,18 +98,13 @@ private fun LeoMotorsApp(
     val coroutineScope = rememberCoroutineScope()
     val cloudSyncService = remember(context) { CloudSyncService(context.applicationContext) }
 
-    var vehicles by remember { mutableStateOf(store.getVehicles()) }
-    var fuelRecords by remember { mutableStateOf(store.getFuelRecords()) }
-    var odometerRecords by remember { mutableStateOf(store.getOdometerRecords()) }
+    val uiState by motorsViewModel.uiState.collectAsState()
+    val vehicles = uiState.vehicles
+    val fuelRecords = uiState.fuelRecords
+    val odometerRecords = uiState.odometerRecords
     var cloudMessage by remember { mutableStateOf<String?>(null) }
     var cloudBusy by remember { mutableStateOf(false) }
     var cloudUserEmail by remember { mutableStateOf(cloudSyncService.currentUserEmail()) }
-
-    fun refreshAll() {
-        vehicles = store.getVehicles()
-        fuelRecords = store.getFuelRecords()
-        odometerRecords = store.getOdometerRecords()
-    }
 
     fun refreshCloudUser() {
         cloudUserEmail = cloudSyncService.currentUserEmail()
@@ -112,7 +114,7 @@ private fun LeoMotorsApp(
         result.onSuccess {
             cloudMessage = it.message
             if (it.localUpdated) {
-                refreshAll()
+                motorsViewModel.refreshAll()
             }
         }.onFailure {
             cloudMessage = cloudErrorMessage(it, "Falha na sincronizacao.")
@@ -267,12 +269,10 @@ private fun LeoMotorsApp(
                         odometerRecords = odometerRecords,
                         fuelRecords = fuelRecords,
                         onRenameVehicle = { vehicleId, name ->
-                            store.updateVehicleName(vehicleId, name)
-                            refreshAll()
+                            motorsViewModel.renameVehicle(vehicleId, name)
                         },
                         onAddOdometer = { vehicleId, dateEpochDay, odometerKm ->
-                            store.addOdometerRecord(vehicleId, dateEpochDay, odometerKm)
-                            refreshAll()
+                            motorsViewModel.addOdometer(vehicleId, dateEpochDay, odometerKm)
                         }
                     )
 
@@ -281,8 +281,13 @@ private fun LeoMotorsApp(
                         fuelRecords = fuelRecords,
                         odometerRecords = odometerRecords,
                         onAddRefuel = { vehicleId, dateEpochDay, odometerKm, liters, pricePerLiter ->
-                            store.addFuelRecord(vehicleId, dateEpochDay, odometerKm, liters, pricePerLiter)
-                            refreshAll()
+                            motorsViewModel.addRefuel(
+                                vehicleId = vehicleId,
+                                dateEpochDay = dateEpochDay,
+                                odometerKm = odometerKm,
+                                liters = liters,
+                                pricePerLiter = pricePerLiter
+                            )
                         }
                     )
 

@@ -16,7 +16,8 @@ O app funciona localmente e pode sincronizar dados com Firebase quando configura
 - Jetpack Compose (Material 3)
 - Android Gradle Plugin 9
 - Coil (imagem/GIF)
-- SharedPreferences + JSON (persistência local)
+- Room (SQLite) para persistência local
+- SharedPreferences para preferências simples (tema)
 - Firebase Auth + Firestore (sincronização opcional)
 - AlarmManager + BroadcastReceiver + Notification (lembretes)
 
@@ -24,10 +25,11 @@ O app funciona localmente e pode sincronizar dados com Firebase quando configura
 - `MainActivity`: somente bootstrap do app (edge-to-edge, lembretes e `setContent`)
 - `Presentation/App Shell`: orquestração da navegação, estado e ações globais em `ui/LeoMotorsApp.kt`
 - `Presentation/UI`: componentes e telas separados por responsabilidade (`ui/AccountSyncUi.kt`, `ui/BrandingUi.kt`, `ui/TabsUi.kt`)
-- `Data`: armazenamento local em `LocalStore`
+- `State`: estado principal em `LeoMotorsViewModel`
+- `Data`: armazenamento local em `LocalStore` com backend Room + migração automática do legado
 - `Domain/Rules`: cálculos de relatório em `ReportCalculator`
 - `Reminder`: agendamento e disparo de notificações em `reminder/`
-- `Cloud`: autenticação Google/Firebase Auth e sincronização Firestore em `cloud/CloudSyncService.kt`
+- `Cloud`: autenticação Google/Firebase Auth e sincronização Firestore com merge por entidade em `cloud/CloudSyncService.kt`
 
 Documentação detalhada: `docs/ARCHITECTURE.md`
 Roadmap de melhorias: `docs/IMPROVEMENTS_ROADMAP.md`
@@ -122,6 +124,9 @@ adb devices -l
   - data no futuro
   - litros/preço inválidos
 - Timeout e proteção de estado para sync em nuvem (evita ficar preso em `Processando...`).
+- Persistência migrada para Room com migração automática dos dados legados.
+- Estado principal movido para `ViewModel`.
+- Sync em nuvem com merge por entidade (veículos/odômetros/abastecimentos por `id`).
 
 ## Estrutura principal
 ```text
@@ -130,6 +135,7 @@ app/
     MainActivity.kt
     ui/
       LeoMotorsApp.kt
+      LeoMotorsViewModel.kt
       BrandingUi.kt
       AccountSyncUi.kt
       TabsUi.kt
@@ -139,6 +145,11 @@ app/
       Models.kt
       LocalStore.kt
       ReportCalculator.kt
+      local/
+        LeoMotorsDatabase.kt
+        LeoMotorsDao.kt
+        LocalEntities.kt
+        LocalMappers.kt
     reminder/
       Reminder.kt
   src/main/res/
