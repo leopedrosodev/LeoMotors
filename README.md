@@ -1,21 +1,21 @@
 # Leo Motors
 
 App Android nativo para controle de carro e moto, com foco em:
-- consumo de combustível
+- consumo de combustivel
 - gasto semanal/mensal
-- distância percorrida
+- distancia percorrida
 - quantidade de abastecimentos
-- manutenção preventiva
-- calculadora de combustível
-- lembretes no início e fim do mês
-- login Google + sincronização na nuvem (opcional)
+- manutencao preventiva
+- calculadora de combustivel
+- lembretes no inicio e fim do mes
+- login Google + sincronizacao na nuvem (opcional)
 
-Versão atual: `1.2.2 (7)`
+Versao atual: `1.2.2 (7)`
 
 ## Stack
 - Kotlin
 - Jetpack Compose (Material 3)
-- Room (persistência local)
+- Room (persistencia local)
 - Firebase Auth + Firestore (sync opcional)
 - AlarmManager + Notification
 - KSP (codegen Room)
@@ -24,9 +24,28 @@ Versão atual: `1.2.2 (7)`
 - `presentation` -> `domain` -> `data`
 - DI manual com `AppContainer`
 - telas por feature com `UiState` + `UiEvent`
-- sem acesso direto da UI a persistência/cloud
+- sem acesso direto da UI a persistencia/cloud
 
 Detalhes: `docs/ARCHITECTURE.md`
+
+## Migracoes de banco (Room)
+Nao usamos Liquibase neste projeto.
+
+Usamos migracao nativa do Room com `Migration(versaoAntiga, versaoNova)`:
+- Versao do banco: `@Database(version = 2)` em `app/src/main/java/br/com/leo/leomotors/data/local/LeoMotorsDatabase.kt`
+- Migracao atual: `MIGRATION_1_2` em `app/src/main/java/br/com/leo/leomotors/data/local/migration/RoomMigrations.kt`
+- Registro da migracao: `.addMigrations(RoomMigrations.MIGRATION_1_2)` em `app/src/main/java/br/com/leo/leomotors/core/di/AppContainer.kt`
+- Snapshot de schema: `app/schemas/br.com.leo.leomotors.data.local.LeoMotorsDatabase/`
+
+Importante:
+- Migracao Room (schema do SQLite) e diferente da importacao legada de prefs.
+- Importacao legada de `SharedPreferences` fica em `LegacyImportManager` e roda no primeiro boot para preservar dados antigos.
+
+Quando alterar entidades/tabelas:
+1. Atualize a versao em `@Database`.
+2. Crie nova migracao em `RoomMigrations`.
+3. Registre no `AppContainer` com `.addMigrations(...)`.
+4. Rode build para gerar/atualizar schema em `app/schemas`.
 
 ## Requisitos
 - Android Studio atualizado
@@ -46,12 +65,12 @@ Sem esse arquivo o app funciona localmente, mas sem login/sync.
 
 ## Comandos principais
 ```bash
-cd /github/LeoMotors
+cd /home/leonardoti03/codes/github/LeoMotors
 
 # Build debug
 ./gradlew :app:assembleDebug
 
-# Testes unitários
+# Testes unitarios
 ./gradlew :app:testDebugUnitTest
 
 # Compilar APK de testes instrumentados
@@ -98,7 +117,7 @@ app/src/main/java/br/com/leo/leomotors/
   ui/theme/
 ```
 
-## Observações
-- Há migração automática de dados legados de `SharedPreferences` para Room.
-- O app exibe versão no canto inferior direito.
-- Ícone customizado está no manifest (`logo_launcher_app`).
+## Observacoes
+- Ha migracao automatica de dados legados de `SharedPreferences` para Room.
+- O app exibe versao no canto inferior direito.
+- Icone customizado esta no manifest (`logo_launcher_app`).
