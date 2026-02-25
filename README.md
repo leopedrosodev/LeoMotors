@@ -46,7 +46,7 @@ Sem esse arquivo o app funciona localmente, mas sem login/sync.
 
 ## Comandos principais
 ```bash
-cd /home/leonardoti03/codes/github/LeoMotors
+cd /github/LeoMotors
 
 # Build debug
 ./gradlew :app:assembleDebug
