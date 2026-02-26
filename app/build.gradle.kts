@@ -10,7 +10,7 @@ if (file("google-services.json").exists()) {
 }
 
 android {
-    namespace = "br.com.leo.leomotors"
+    namespace = "br.com.tec.tecmotors"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -18,7 +18,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "br.com.leo.leomotors"
+        applicationId = "br.com.tec.tecmotors"
         minSdk = 24
         targetSdk = 36
         versionCode = 7

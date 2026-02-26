@@ -1,4 +1,4 @@
-# Leo Motors
+# Tec Motors
 
 App Android nativo para controle de carro e moto, com foco em:
 - consumo de combustivel
@@ -32,10 +32,10 @@ Detalhes: `docs/ARCHITECTURE.md`
 Nao usamos Liquibase neste projeto.
 
 Usamos migracao nativa do Room com `Migration(versaoAntiga, versaoNova)`:
-- Versao do banco: `@Database(version = 2)` em `app/src/main/java/br/com/leo/leomotors/data/local/LeoMotorsDatabase.kt`
-- Migracao atual: `MIGRATION_1_2` em `app/src/main/java/br/com/leo/leomotors/data/local/migration/RoomMigrations.kt`
-- Registro da migracao: `.addMigrations(RoomMigrations.MIGRATION_1_2)` em `app/src/main/java/br/com/leo/leomotors/core/di/AppContainer.kt`
-- Snapshot de schema: `app/schemas/br.com.leo.leomotors.data.local.LeoMotorsDatabase/`
+- Versao do banco: `@Database(version = 2)` em `app/src/main/java/br/com/tec/tecmotors/data/local/TecMotorsDatabase.kt`
+- Migracao atual: `MIGRATION_1_2` em `app/src/main/java/br/com/tec/tecmotors/data/local/migration/RoomMigrations.kt`
+- Registro da migracao: `.addMigrations(RoomMigrations.MIGRATION_1_2)` em `app/src/main/java/br/com/tec/tecmotors/core/di/AppContainer.kt`
+- Snapshot de schema: `app/schemas/br.com.tec.tecmotors.data.local.TecMotorsDatabase/`
 
 Importante:
 - Migracao Room (schema do SQLite) e diferente da importacao legada de prefs.
@@ -56,7 +56,7 @@ Quando alterar entidades/tabelas:
 1. Crie o projeto no Firebase.
 2. Habilite Google Sign-In em Authentication.
 3. Crie Firestore.
-4. Registre app Android com pacote `br.com.leo.leomotors`.
+4. Registre app Android com pacote `br.com.tec.tecmotors`.
 5. Baixe `google-services.json`.
 6. Copie para `app/google-services.json`.
 7. Sincronize Gradle.
@@ -81,9 +81,9 @@ cd /home/leonardoti03/codes/github/LeoMotors
 Gerado em:
 - `app/build/outputs/apk/debug/app-debug.apk`
 
-Renomear para `Leo-motors.apk`:
+Renomear para `Tec-motors.apk`:
 ```bash
-cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Leo-motors.apk
+cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Tec-motors.apk
 ```
 
 ## Instalar via ADB
@@ -93,7 +93,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Estrutura atual (resumo)
 ```text
-app/src/main/java/br/com/leo/leomotors/
+app/src/main/java/br/com/tec/tecmotors/
   MainActivity.kt
   core/
     di/AppContainer.kt

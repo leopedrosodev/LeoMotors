@@ -1,4 +1,4 @@
-# Arquitetura Leo Motors (v1.2.2)
+# Arquitetura Tec Motors (v1.2.2)
 
 ## Objetivo
 Aplicar separacao por camadas e feature para reduzir acoplamento e melhorar testabilidade.
@@ -12,13 +12,13 @@ Aplicar separacao por camadas e feature para reduzir acoplamento e melhorar test
 ## Estrutura principal
 - `MainActivity`: bootstrap Android somente.
 - `core/di/AppContainer.kt`: composicao de dependencias da aplicacao.
-- `data/local/`: banco Room (`LeoMotorsDatabase`), DAOs, entities e snapshot local.
+- `data/local/`: banco Room (`TecMotorsDatabase`), DAOs, entities e snapshot local.
 - `data/local/migration/`: migracoes de schema Room e importacao legada de `SharedPreferences`.
 - `data/repository/`: implementacoes de `VehicleRepository`, `RefuelRepository`, `MaintenanceRepository`, `SettingsRepository`, `SnapshotRepository` e `SyncRepository`.
 - `data/remote/RemoteSnapshotMapper.kt`: compatibilidade de schema remoto (incluindo documentos antigos sem manutencao).
 - `domain/repository/Repositories.kt`: contratos de abstracao.
 - `domain/usecase/`: regras de negocio por feature.
-- `presentation/app/LeoMotorsRoot.kt`: shell da aplicacao (tabs, toolbar, tema, login Google).
+- `presentation/app/TecMotorsRoot.kt`: shell da aplicacao (tabs, toolbar, tema, login Google).
 - `presentation/vehicles|refuels|maintenance|reports|account/`: ViewModels e telas especificas.
 
 ## Fluxo de dados
@@ -30,9 +30,9 @@ Aplicar separacao por camadas e feature para reduzir acoplamento e melhorar test
 
 ## Persistencia local
 - Banco: Room SQLite.
-- Classe de banco: `data/local/LeoMotorsDatabase.kt`.
+- Classe de banco: `data/local/TecMotorsDatabase.kt`.
 - Versao atual do schema: `2`.
-- Schemas exportados: `app/schemas/br.com.leo.leomotors.data.local.LeoMotorsDatabase/`.
+- Schemas exportados: `app/schemas/br.com.tec.tecmotors.data.local.TecMotorsDatabase/`.
 
 ## Migracoes de banco (Room)
 Nao usamos Liquibase.

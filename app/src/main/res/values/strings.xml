@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">LeoMotors</string>
+    <string name="app_name">TecMotors</string>
     <string name="google_web_client_id"></string>
 
     <string name="tab_refuels">Abastecimentos</string>
@@ -109,11 +109,11 @@
     <string name="text_sync_conflict_hint">Conflito simples: o snapshot com timestamp mais recente vence (local ou nuvem).</string>
     <string name="action_close">Fechar</string>
 
-    <string name="logo_fallback">LEO MOTORS</string>
-    <string name="logo_leo_motors">Logo Leo Motors</string>
-    <string name="intro_content_desc">Apresentacao Leo Motors</string>
+    <string name="logo_fallback">TEC MOTORS</string>
+    <string name="logo_tecmotors_light">Logo Tec Motors</string>
+    <string name="intro_content_desc">Apresentacao Tec Motors</string>
 
-    <string name="notif_channel_name">Lembretes Leo Motors</string>
+    <string name="notif_channel_name">Lembretes Tec Motors</string>
     <string name="notif_channel_desc">Lembretes para registrar odometro no inicio e fim do mes</string>
     <string name="notif_title_month_start">Inicio do mes</string>
     <string name="notif_title_month_end">Fim do mes</string>

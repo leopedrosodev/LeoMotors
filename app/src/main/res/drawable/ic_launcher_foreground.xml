@@ -4,5 +4,5 @@
         android:width="92dp"
         android:height="92dp"
         android:gravity="center"
-        android:drawable="@drawable/logo_leo_motors" />
+        android:drawable="@drawable/logo_tecmotors_light" />
 </layer-list>
